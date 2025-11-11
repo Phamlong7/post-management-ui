@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { postAPI, PostDto } from '@/lib/api';
 
-export default function EditPost({ params }: { params: { id: string } }) {
+export default function EditPost() {
   const router = useRouter();
+  const params = useParams();
+  const id = params?.id as string;
+  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<PostDto>({
@@ -16,8 +19,15 @@ export default function EditPost({ params }: { params: { id: string } }) {
   });
 
   const fetchPost = useCallback(async () => {
+    if (!id) {
+      console.error('No ID provided');
+      router.push('/');
+      return;
+    }
+
     try {
-      const post = await postAPI.getById(parseInt(params.id));
+      setLoading(true);
+      const post = await postAPI.getById(parseInt(id));
       setFormData({
         name: post.name,
         description: post.description,
@@ -25,12 +35,12 @@ export default function EditPost({ params }: { params: { id: string } }) {
       });
     } catch (err) {
       console.error('Error fetching post:', err);
-      alert('Post not found');
+      alert(`Post not found: ${err instanceof Error ? err.message : 'Unknown error'}`);
       router.push('/');
     } finally {
       setLoading(false);
     }
-  }, [params.id, router]);
+  }, [id, router]);
 
   useEffect(() => {
     fetchPost();
@@ -38,10 +48,16 @@ export default function EditPost({ params }: { params: { id: string } }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!id) {
+      alert('Post ID not found');
+      return;
+    }
+    
     setSaving(true);
 
     try {
-      await postAPI.update(parseInt(params.id), {
+      await postAPI.update(parseInt(id), {
         ...formData,
         image: formData.image?.trim() || undefined
       });
