@@ -1,15 +1,24 @@
 /**
  * Get API URL based on environment
- * - Production: Uses https://postmanage.onrender.com/api
- * - Development: Uses http://localhost:5203/api
- * - Fallback: Uses localhost if env variable is not set
+ * 
+ * CORS Solution:
+ * If backend doesn't have CORS enabled, requests are proxied through /api route
+ * Set USE_API_PROXY=true to enable proxy (useful during development)
+ * 
+ * - Production: Uses /api proxy (which forwards to https://postmanage.onrender.com/api)
+ * - Development: Uses http://localhost:5203/api directly
  */
 const getApiUrl = (): string => {
-  if (typeof window === 'undefined') {
-    // Server-side
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5203/api';
+  // Check if we should use the proxy
+  const useProxy = typeof window !== 'undefined' && 
+    process.env.NEXT_PUBLIC_USE_API_PROXY === 'true';
+  
+  if (useProxy) {
+    // Use Next.js API route as proxy to avoid CORS issues
+    return '/api';
   }
-  // Client-side
+  
+  // Use direct API URL
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5203/api';
 };
 
